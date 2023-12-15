@@ -1,26 +1,51 @@
 #!/usr/bin/python3
+import time
+import math
 import sys
-from math import sqrt
 
-def factorize(n):
-    for i in range(2, int(sqrt(n)) + 1):
-        if n % i == 0:
-            return i, n // i
-    return n, 1
+def pollard_rho_algorithm(n):
+    if n % 2 == 0:
+        return 2
 
-def main(filename):
-    with open(filename, 'r') as file:
-        lines = file.read().splitlines()
+    A = 2
+    B = 2
+    C = 1
+    F = lambda A: (A**2 + 1) % n
 
-    for line in lines:
-        number = int(line)
-        factor1, factor2 = factorize(number)
-        print("{}={}*{}".format(number, factor2, factor1))
+    while C == 1:
+        A = F(A)
+        B = F(F(B))
+        C = math.gcd(abs(A - B), n)
 
-if __name__ == "__main__":
+    return C
+
+def main():
     if len(sys.argv) != 2:
-        print("Usage: factors <file>")
-        sys.exit(1)
+        print("Usage: ./factors <file>")
+        return
 
-    filename = sys.argv[1]
-    main(filename)
+    file_path = sys.argv[1]
+    start_time = time.time()
+
+    try:
+        with open(file_path, 'r') as file:
+            nums = file.readlines()
+
+        for num in nums:
+            current_num = int(num.strip())
+            factor = pollard_rho_algorithm(current_num)
+
+            if factor == current_num:
+                print(f"{current_num} is prime.")
+            else:
+                print(f"{current_num}={factor}*{current_num // factor}")
+
+            if time.time() - start_time > 5:
+                print("Time limit exceeded")
+                exit()
+
+    except FileNotFoundError:
+        print(f"File '{file_path}' not found.")
+
+if __name__ == '__main__':
+    main()

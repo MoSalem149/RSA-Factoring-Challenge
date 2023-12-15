@@ -1,68 +1,69 @@
 #!/usr/bin/python3
+import time
+import math
 import sys
-from math import sqrt
 
-def gcd(a, b):
-    while b:
-        a, b = b, a % b
-    return a
+def pollard_rho_algorithm(n):
+    if n % 2 == 0:
+        return 2
 
-def pollards_rho(n):
-    x, y, d = 2, 2, 1
-    f = lambda x: (x**2 + 1) % n
+    A = 2
+    B = 2
+    C = 1
 
-    while d == 1:
-        x = f(x)
-        y = f(f(y))
-        d = gcd(abs(x - y), n)
+    F = lambda A: (A**2 + 1) % n
 
-    return d
+    while C == 1:
+        A = F(A)
+        B = F(F(B))
+        C = math.gcd(abs(A - B), n)
 
-def factorize_rsa(n):
-    factors = []
+    return C
 
-    while n % 2 == 0:
-        factors.append(2)
-        n //= 2
-
-    while n > 1 and n != 0:
-        if n > 2**64:
-            factor = pollards_rho(n)
-        else:
-            factor = factorize_small(n)
-        factors.append(factor)
-        n //= factor
-
-    return factors[::-1]  # Reverse the order of factors
-
-def factorize_small(n):
-    for i in range(2, int(sqrt(n)) + 1):
-        if n % i == 0:
-            return i
-    return n
-
-def main(filename):
-    with open(filename, 'r') as file:
-        lines = file.read().splitlines()
-
-    for line in lines:
-        number = int(line)
-        factors = factorize_rsa(number)
-        primes = [factor for factor in factors if is_prime(factor)]
-        print("{}={}".format(number, '*'.join(map(str, primes))))
-
-def is_prime(n):
-    if n < 2:
+def is_prime(num):
+    if num < 2:
         return False
-    for i in range(2, int(sqrt(n)) + 1):
-        if n % i == 0:
+    for i in range(2, int(math.sqrt(num)) + 1):
+        if num % i == 0:
             return False
     return True
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: rsa <file>")
-        sys.exit(1)
+def factorize_and_print(number):
+    P = pollard_rho_algorithm(number)
 
-    filename = sys.argv[1]
-    main(filename)
+    while not is_prime(P):
+        P = pollard_rho_algorithm(P)
+
+    Q = number // P
+
+    if P == number or Q == number:
+        print(f"{number} is prime.")
+    else:
+        print(f"{number}={P}*{Q}")
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python factorize.py <file>")
+        return
+
+    file_path = sys.argv[1]
+
+    start_time = time.time()
+    try:
+        with open(file_path, 'r') as file:
+            number = int(file.readline().strip())
+
+        factorize_and_print(number)
+
+        if time.time() - start_time > 5:
+            print("Time limit exceeded")
+            exit()
+
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found.")
+    except ValueError:
+        print("Error: Invalid input in the file. Please ensure the file contains a valid natural number.")
+
+
+if __name__ == '__main__':
+    main()
